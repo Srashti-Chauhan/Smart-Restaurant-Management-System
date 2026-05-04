@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Booking</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="navbar">
+    <div class="logo">🍽️ Smart Restaurant</div>
+</div>
+
+<div class="container">
+<h2>🍽️ Table Booking</h2>
+
+<form onsubmit="bookTable(event)">
+    
+    <input type="text" id="custName" placeholder="Customer Name" required>
+
+    <input type="number" id="people" placeholder="Number of People" required>
+
+    <input type="date" id="date" required>
+
+    <input type="time" id="time" required>
+
+    <button type="submit">Confirm Booking</button>
+</form>
+
+<br>
+
+<button onclick="logout()">Logout</button>
+
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
