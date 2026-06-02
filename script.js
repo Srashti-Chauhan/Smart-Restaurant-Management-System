@@ -1,16 +1,14 @@
 // ===================== REGISTER =====================
-function register(e) {
+async function register(e) {
     e.preventDefault();
 
     let name = document.getElementById("name").value.trim();
     let email = document.getElementById("email").value.trim();
     let password = document.getElementById("password").value.trim();
 
-    // PATTERNS
     let emailPattern = /^[a-zA-Z0-9]+@gmail\.com$/;
     let passwordPattern = /^[a-zA-Z0-9]{6}$/;
 
-    // VALIDATION
     if (name === "" || email === "" || password === "") {
         alert("All fields are required ❌");
         return;
@@ -22,58 +20,77 @@ function register(e) {
     }
 
     if (!passwordPattern.test(password)) {
-        alert("Password must be exactly 6 characters (letters & numbers only) ❌");
+        alert("Password must be exactly 6 characters ❌");
         return;
     }
 
-    let users = JSON.parse(localStorage.getItem("users")) || [];
+    try {
+        const response = await fetch("https://srms-backend-23db.onrender.com/register", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                name,
+                email,
+                password
+            })
+        });
 
-    // CHECK IF USER EXISTS
-    let exists = users.find(user => user.email === email);
-    if (exists) {
-        alert("User already exists ❌");
-        return;
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.message);
+            return;
+        }
+
+        alert("Registered Successfully ✅");
+        window.location.href = "login.html";
+
+    } catch (error) {
+        console.log(error);
+        alert("Backend Connection Failed ❌");
     }
-
-    users.push({ name, email, password });
-
-    localStorage.setItem("users", JSON.stringify(users));
-
-    alert("Registered Successfully ✅");
-    window.location.href = "login.html";
 }
-
 // ===================== LOGIN =====================
-function login(e) {
+async function login(e) {
     e.preventDefault();
 
     let email = document.getElementById("email").value.trim();
     let password = document.getElementById("password").value.trim();
 
-    let emailPattern = /^[a-zA-Z0-9]+@gmail\.com$/;
-    let passwordPattern = /^[a-zA-Z0-9]{6}$/;
+    try {
+        const response = await fetch("https://srms-backend-23db.onrender.com/login", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                email,
+                password
+            })
+        });
 
-    if (!emailPattern.test(email) || !passwordPattern.test(password)) {
-        alert("Invalid email or password format ❌");
-        return;
-    }
+        const data = await response.json();
 
-    let users = JSON.parse(localStorage.getItem("users")) || [];
-
-    let validUser = users.find(user => user.email === email && user.password === password);
-
-    if (validUser) {
-        localStorage.setItem("currentUser", JSON.stringify(validUser));
+        if (!response.ok) {
+            alert(data.message);
+            return;
+        }
 
         alert("Login Successful ✅");
+
+        localStorage.setItem("currentUser", JSON.stringify(data.user));
+
         window.location.href = "booking.html";
-    } else {
-        alert("Invalid Credentials ❌");
+
+    } catch (error) {
+        console.log(error);
+        alert("Backend Connection Failed ❌");
     }
 }
-
 // ===================== BOOKING =====================
-function bookTable(e) {
+async function bookTable(e) {
     e.preventDefault();
 
     let name = document.getElementById("custName").value.trim();
@@ -86,71 +103,71 @@ function bookTable(e) {
         return;
     }
 
-    // ❌ Block past dates
     let today = new Date().toISOString().split("T")[0];
+
     if (date < today) {
         alert("Cannot book past dates ❌");
         return;
     }
 
-    // GET EXISTING BOOKINGS (IMPORTANT)
-    let bookings = JSON.parse(localStorage.getItem("bookings")) || [];
-
-    // NEW BOOKING OBJECT
     let currentUser = JSON.parse(localStorage.getItem("currentUser"));
 
-let newBooking = {
-    userEmail: currentUser ? currentUser.email : "guest",
-    name: name,
-    people: people,
-    date: date,
-    time: time
-};
+    try {
+        const response = await fetch("https://srms-backend-23db.onrender.com/booking", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                userEmail: currentUser ? currentUser.email : "guest",
+                name,
+                people,
+                date,
+                time
+            })
+        });
 
-    // ADD NEW BOOKING (NOT OVERWRITE)
-    bookings.push(newBooking);
+        const data = await response.json();
 
-    // SAVE BACK TO LOCAL STORAGE
-    localStorage.setItem("bookings", JSON.stringify(bookings));
+        if (!response.ok) {
+            alert(data.message);
+            return;
+        }
 
-    console.log("Before Save:", bookings);
+        alert("Booking Saved Successfully ✅");
+        window.location.href = "payment.html";
 
-    alert("Booking Saved Successfully ✅");
-
-    window.location.href = "payment.html";
-
+    } catch (error) {
+        console.log(error);
+        alert("Backend Connection Failed ❌");
+    }
 }
 
 // ===================== PAYMENT =====================
-function pay(e) {
+async function pay(e) {
     e.preventDefault();
 
     let cardNo = document.getElementById("cardNo").value.trim();
     let expiry = document.getElementById("expiry").value.trim();
     let cvv = document.getElementById("cvv").value.trim();
 
-    // PATTERNS
     let cardPattern = /^[0-9]{12}$/;
     let expiryPattern = /^(0[1-9]|1[0-2])\/[0-9]{2}$/;
     let cvvPattern = /^[0-9]{3}$/;
 
-    // CARD VALIDATION
     if (!cardPattern.test(cardNo)) {
         alert("Card number must be exactly 12 digits ❌");
         return;
     }
 
-    // EXPIRY FORMAT VALIDATION
     if (!expiryPattern.test(expiry)) {
         alert("Expiry must be in format MM/YY ❌");
         return;
     }
 
-    // EXPIRY DATE CHECK (NO PAST)
     let [month, year] = expiry.split("/");
-
     let currentDate = new Date();
-    let currentYear = currentDate.getFullYear() % 100; // last 2 digits
+    let currentYear = currentDate.getFullYear() % 100;
     let currentMonth = currentDate.getMonth() + 1;
 
     month = parseInt(month);
@@ -161,11 +178,28 @@ function pay(e) {
         return;
     }
 
-    // CVV VALIDATION
     if (!cvvPattern.test(cvv)) {
         alert("CVV must be exactly 3 digits ❌");
         return;
     }
+
+    let currentUser = JSON.parse(localStorage.getItem("currentUser"));
+
+    const response = await fetch("https://srms-backend-23db.onrender.com/payment", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            userEmail: currentUser ? currentUser.email : "guest",
+            cardNo,
+            expiry,
+            amount: "500",
+            status: "Success"
+        })
+    });
+
+    const data = await response.json();
 
     alert("Payment Successful ✅");
     window.location.href = "index.html";
